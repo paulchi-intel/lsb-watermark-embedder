@@ -1,3 +1,5 @@
+<img src="icon_lsb-watermark-embedder.png" align="left" width="128" height="128">
+
 # LSB Watermark Embedder
 
 A real-time screen watermark embedding tool developed in Python. It embeds watermarks into captured screen images, supporting both visible and invisible (LSB) watermarks. Ideal for protecting screen content copyright or adding identification marks during live streaming and screen sharing.
