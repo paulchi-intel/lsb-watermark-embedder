@@ -7,3 +7,4 @@ numpy==1.26.2
 jinja2==3.1.2
 python-i18n==0.3.9
 pygetwindow==0.0.9
+websockets==12.0
