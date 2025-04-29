@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LSB 浮水印嵌入器</title>
+    <style>
+        :root {
+            --primary-color: #2196F3;
+            --secondary-color: #333;
+            --background-color: #f5f5f5;
+            --border-color: #ddd;
+            --success-color: #4CAF50;
+            --danger-color: #f44336;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', sans-serif;
+            line-height: 1.6;
+            background-color: var(--background-color);
+            color: var(--secondary-color);
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            padding: 20px;
+            height: 100vh;
+        }
+
+        /* 語言選擇器樣式 */
+        .language-selector {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .language-selector select {
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        /* 控制面板樣式 */
+        .control-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .panel-section h3 {
+            color: var(--secondary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+
+        /* 表單元素樣式 */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .btn-start {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-stop {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        /* 效能監控樣式 */
+        .performance-monitor {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: auto;
+        }
+
+        .monitor-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .monitor-item {
+            text-align: center;
+            padding: 10px;
+            background: var(--background-color);
+            border-radius: 4px;
+        }
+
+        .monitor-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        /* 預覽區域樣式 */
+        .preview-area {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-header {
+            padding: 15px;
+            background: var(--secondary-color);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preview-content {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .preview-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #666;
+            text-align: center;
+            padding: 20px;
+            pointer-events: none;
+            display: none;  /* 隱藏等待文字 */
+        }
+
+        /* 狀態指示器 */
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--danger-color);
+        }
+
+        .status-dot.active {
+            background-color: var(--success-color);
+        }
+
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        select.form-control {
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        .control-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .button-group + .button-group {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 語言選擇器 -->
+    <div class="language-selector">
+        <select id="language-select" onchange="changeLanguage(this.value)">
+            <option value="zh-TW">繁體中文</option>
+            <option value="en">English</option>
+        </select>
+    </div>
+
+    <div class="container">
+        <!-- 控制面板 -->
+        <div class="control-panel">
+            <div class="panel-section">
+                <h3 data-i18n="watermarkSettings">浮水印設定</h3>
+                <div class="form-group">
+                    <label for="watermark-text" data-i18n="watermarkText">浮水印文字</label>
+                    <input type="text" id="watermark-text" data-i18n-placeholder="enterWatermark" placeholder="請輸入浮水印文字">
+                </div>
+                <div class="form-group">
+                    <label for="watermark-visibility" data-i18n="watermarkVisibility">浮水印可視性</label>
+                    <select id="watermark-visibility" class="form-control">
+                        <option value="invisible" data-i18n="invisibleWatermark">不可視浮水印 (LSB)</option>
+                        <option value="visible" data-i18n="visibleWatermark">可視浮水印</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="watermark-redundancy" data-i18n="watermarkRedundancy">浮水印冗餘</label>
+                    <select id="watermark-redundancy" class="form-control">
+                        <option value="false" data-i18n="noRedundancy">標準浮水印</option>
+                        <option value="true" data-i18n="useRedundancy">冗餘浮水印（增強穩健性）</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3 data-i18n="processingSettings">處理設定</h3>
+                <div class="form-group">
+                    <label for="frame-interval" data-i18n="frameInterval">處理頻率 (N 值): <span id="interval-value">5</span></label>
+                    <input type="range" id="frame-interval" min="1" max="30" value="5">
+                    <small data-i18n="frameIntervalDesc">每 N 幀處理一次（1-30）</small>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3 data-i18n="controls">控制</h3>
+                <div class="control-group">
+                    <div class="button-group">
+                        <button id="btn-start" data-i18n="startProcessing">開始處理</button>
+                        <button id="btn-stop" data-i18n="stopProcessing" disabled>停止處理</button>
+                    </div>
+                    <div class="button-group">
+                        <button id="btn-screenshot" data-i18n="screenshot">螢幕截圖</button>
+                        <button id="btn-compare-images" data-i18n="compareImages">截圖並比較</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="performance-monitor">
+                <h3 data-i18n="performanceMonitor">效能監控</h3>
+                <div class="monitor-grid">
+                    <div class="monitor-item">
+                        <div>FPS</div>
+                        <div class="monitor-value" id="fps-value">0</div>
+                    </div>
+                    <div class="monitor-item">
+                        <div data-i18n="cpuUsage">CPU 使用率</div>
+                        <div class="monitor-value" id="cpu-value">0%</div>
+                    </div>
+                    <div class="monitor-item">
+                        <div data-i18n="latency">延遲</div>
+                        <div class="monitor-value" id="latency-value">0ms</div>
+                    </div>
+                    <div class="monitor-item">
+                        <div data-i18n="memoryUsage">記憶體使用</div>
+                        <div class="monitor-value" id="memory-value">0MB</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 預覽區域 -->
+        <div class="preview-area">
+            <div class="preview-header">
+                <div data-i18n="previewWindow">預覽視窗</div>
+                <div class="status-indicator">
+                    <span class="status-dot" id="status-dot"></span>
+                    <span id="status-text" data-i18n="stopped">已停止</span>
+                </div>
+            </div>
+            <div class="preview-content">
+                <canvas id="preview" width="800" height="600"></canvas>
+                <div class="preview-placeholder" id="preview-placeholder" data-i18n="waitingToStart">
+                    等待開始處理...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 語言配置
+        const i18n = {
+            'zh-TW': {
+                'watermarkSettings': '浮水印設定',
+                'watermarkText': '浮水印文字',
+                'enterWatermark': '請輸入浮水印文字',
+                'processingSettings': '處理設定',
+                'frameInterval': '處理頻率 (N 值): ',
+                'frameIntervalDesc': '每 N 幀處理一次（1-30）',
+                'controls': '控制',
+                'startProcessing': '開始處理',
+                'stopProcessing': '停止處理',
+                'performanceMonitor': '效能監控',
+                'cpuUsage': 'CPU 使用率',
+                'latency': '延遲',
+                'memoryUsage': '記憶體使用',
+                'previewWindow': '預覽視窗',
+                'stopped': '已停止',
+                'processing': '處理中',
+                'waitingToStart': '等待開始處理...',
+                'watermarkVisibility': '浮水印可視性',
+                'invisibleWatermark': '不可視浮水印 (LSB)',
+                'visibleWatermark': '可視浮水印',
+                'watermarkRedundancy': '浮水印冗餘',
+                'noRedundancy': '標準浮水印',
+                'useRedundancy': '冗餘浮水印（增強穩健性）',
+                'screenshot': '螢幕截圖',
+                'compareImages': '截圖並比較'
+            },
+            'en': {
+                'watermarkSettings': 'Watermark Settings',
+                'watermarkText': 'Watermark Text',
+                'enterWatermark': 'Enter watermark text',
+                'processingSettings': 'Processing Settings',
+                'frameInterval': 'Processing Frequency (N value): ',
+                'frameIntervalDesc': 'Process every N frames (1-30)',
+                'controls': 'Controls',
+                'startProcessing': 'Start Processing',
+                'stopProcessing': 'Stop Processing',
+                'performanceMonitor': 'Performance Monitor',
+                'cpuUsage': 'CPU Usage',
+                'latency': 'Latency',
+                'memoryUsage': 'Memory Usage',
+                'previewWindow': 'Preview Window',
+                'stopped': 'Stopped',
+                'processing': 'Processing',
+                'waitingToStart': 'Waiting to start...',
+                'watermarkVisibility': 'Watermark Visibility',
+                'invisibleWatermark': 'Invisible Watermark (LSB)',
+                'visibleWatermark': 'Visible Watermark',
+                'watermarkRedundancy': 'Watermark Redundancy',
+                'noRedundancy': 'Standard Watermark',
+                'useRedundancy': 'Redundant Watermark (Enhanced Robustness)',
+                'screenshot': 'Screenshot',
+                'compareImages': 'Screenshot and Compare'
+            }
+        };
+
+        // 更新頁面文字
+        function updateTexts(lang) {
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                if (i18n[lang][key]) {
+                    element.textContent = i18n[lang][key];
+                }
+            });
+
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+                const key = element.getAttribute('data-i18n-placeholder');
+                if (i18n[lang][key]) {
+                    element.placeholder = i18n[lang][key];
+                }
+            });
+
+            // 更新文件語言
+            document.documentElement.lang = lang;
+        }
+
+        // 切換語言
+        function changeLanguage(lang) {
+            updateTexts(lang);
+        }
+
+        // 獲取DOM元素
+        const frameIntervalInput = document.getElementById('frame-interval');
+        const intervalValue = document.getElementById('interval-value');
+        const btnStart = document.getElementById('btn-start');
+        const btnStop = document.getElementById('btn-stop');
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const fpsValue = document.getElementById('fps-value');
+        const cpuValue = document.getElementById('cpu-value');
+        const latencyValue = document.getElementById('latency-value');
+        const memoryValue = document.getElementById('memory-value');
+
+        // 更新處理頻率顯示
+        frameIntervalInput.addEventListener('input', (e) => {
+            intervalValue.textContent = e.target.value;
+        });
+
+        // 開始處理
+        btnStart.addEventListener('click', () => {
+            if (!ws) return;
+            
+            const watermarkText = document.getElementById('watermark-text').value;
+            const watermarkVisibility = document.getElementById('watermark-visibility').value;
+            const watermarkRedundancy = document.getElementById('watermark-redundancy').value === 'true';
+            const frameInterval = document.getElementById('frame-interval').value;
+            
+            // 發送配置
+            ws.send(JSON.stringify({
+                type: 'config',
+                data: {
+                    watermarkText: watermarkText,
+                    watermarkVisible: watermarkVisibility === 'visible',
+                    watermarkRedundancy: watermarkRedundancy,
+                    frameInterval: parseInt(frameInterval),
+                    processing: true
+                }
+            }));
+            
+            btnStart.disabled = true;
+            btnStop.disabled = false;
+            statusDot.classList.add('active');
+            const lang = document.documentElement.lang;
+            statusText.textContent = i18n[lang]['processing'];
+            
+            // 模擬更新效能指標
+            startMonitoring();
+        });
+
+        // 停止處理
+        btnStop.addEventListener('click', () => {
+            if (!ws) return;
+            
+            // 發送停止處理的配置
+            ws.send(JSON.stringify({
+                type: 'config',
+                data: {
+                    processing: false
+                }
+            }));
+            
+            btnStart.disabled = false;
+            btnStop.disabled = true;
+            statusDot.classList.remove('active');
+            const lang = document.documentElement.lang;
+            statusText.textContent = i18n[lang]['stopped'];
+            
+            // 停止效能指標更新
+            stopMonitoring();
+        });
+
+        let monitoringInterval;
+
+        // 模擬效能指標更新
+        function startMonitoring() {
+            monitoringInterval = setInterval(() => {
+                // 模擬數據更新
+                fpsValue.textContent = Math.floor(24 + Math.random() * 6);
+                cpuValue.textContent = Math.floor(20 + Math.random() * 10) + '%';
+                latencyValue.textContent = Math.floor(30 + Math.random() * 20) + 'ms';
+                memoryValue.textContent = Math.floor(200 + Math.random() * 100) + 'MB';
+            }, 1000);
+        }
+
+        function stopMonitoring() {
+            clearInterval(monitoringInterval);
+            // 重置數值
+            fpsValue.textContent = '0';
+            cpuValue.textContent = '0%';
+            latencyValue.textContent = '0ms';
+            memoryValue.textContent = '0MB';
+        }
+
+        // WebSocket 連接
+        let ws = null;
+        const previewCanvas = document.getElementById('preview');
+        const ctx = previewCanvas.getContext('2d');
+
+        function connectWebSocket() {
+            if (ws) {
+                ws.close();
+            }
+
+            ws = new WebSocket(`ws://${window.location.host}/api/stream`);
+            
+            ws.onopen = function() {
+                console.log('WebSocket 已連接');
+            };
+            
+            // 保存最後一次接收的圖像類型
+            let lastImageType = 'regular';  // 'regular' 或 'comparison'
+            
+            ws.onmessage = function(event) {
+                // 檢查是否為控制訊息
+                if (event.data instanceof Blob) {
+                    // 處理影像資料
+                    const blob = event.data;
+                    const url = URL.createObjectURL(blob);
+                    const img = new Image();
+                    
+                    img.onload = function() {
+                        // 清除畫布
+                        ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+                        
+                        // 取得預覽區域的實際大小
+                        const container = previewCanvas.parentElement;
+                        previewCanvas.width = container.clientWidth;
+                        previewCanvas.height = container.clientHeight;
+                        
+                        if (lastImageType === 'comparison') {
+                            // 對於比較圖像，我們適當調整縮放以確保能看到完整內容
+                            const scaleX = previewCanvas.width / img.width;
+                            const scaleY = previewCanvas.height / img.height;
+                            const scale = Math.min(scaleX, scaleY);  // 使用最小縮放比例以確保完整顯示
+                            
+                            // 計算居中位置
+                            const x = (previewCanvas.width - img.width * scale) / 2;
+                            const y = (previewCanvas.height - img.height * scale) / 2;
+                            
+                            // 繪製圖像
+                            ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                        } else {
+                            // 對於正常的視頻幀，使用原有的方式繪製
+                            const scaleX = previewCanvas.width / img.width;
+                            const scaleY = previewCanvas.height / img.height;
+                            const scale = Math.max(scaleX, scaleY);
+                            
+                            // 計算居中位置
+                            const x = (previewCanvas.width - img.width * scale) / 2;
+                            const y = (previewCanvas.height - img.height * scale) / 2;
+                            
+                            // 繪製圖像
+                            ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                        }
+                        
+                        // 釋放 URL
+                        URL.revokeObjectURL(url);
+                    };
+                    
+                    img.src = url;
+                } else {
+                    // 處理 JSON 訊息
+                    try {
+                        const message = JSON.parse(event.data);
+                        if (message.type === 'compare_images') {
+                            // 重置圖像類型為常規
+                            lastImageType = 'regular';
+                            if (message.status === 'success') {
+                                const lang = document.documentElement.lang;
+                                alert(lang === 'zh-TW' ? '比較圖像已生成！' : 'Comparison image generated!');
+                                // 文件夾會自動打開，因為後端已經處理
+                            } else if (message.status === 'error') {
+                                const lang = document.documentElement.lang;
+                                alert(lang === 'zh-TW' ? '比較圖像生成失敗：' + message.message : 'Failed to generate comparison image: ' + message.message);
+                            }
+                        } else if (message.type === 'recording') {
+                            // 重置圖像類型為常規
+                            lastImageType = 'regular';
+                            if (message.status === 'error') {
+                                alert('錄影操作失敗');
+                            } else if (message.status === 'stopped' && message.video_path) {
+                                // 開啟檔案總管並顯示錄影檔案
+                                ws.send(JSON.stringify({
+                                    type: 'open_folder',
+                                    path: message.video_path
+                                }));
+                            } else if (message.status === 'stopped' && message.screenshot_path) {
+                                // 開啟檔案總管並顯示截圖檔案
+                                ws.send(JSON.stringify({
+                                    type: 'open_folder',
+                                    path: message.screenshot_path
+                                }));
+                            }
+                        } else if (message.type === 'screenshot') {
+                            // 重置圖像類型為常規
+                            lastImageType = 'regular';
+                            if (message.status === 'success') {
+                                const lang = document.documentElement.lang;
+                                alert(lang === 'zh-TW' ? '截圖已保存！' : 'Screenshot saved!');
+                                // 可選：打開截圖文件夾
+                                if (message.screenshot_path) {
+                                    ws.send(JSON.stringify({
+                                        type: 'open_folder',
+                                        path: message.screenshot_path
+                                    }));
+                                }
+                            } else if (message.status === 'error') {
+                                const lang = document.documentElement.lang;
+                                alert(lang === 'zh-TW' ? '截圖失敗！' : 'Screenshot failed!');
+                            }
+                        } else if (message.type === 'compare_screenshots') {
+                            // 重置圖像類型為常規
+                            lastImageType = 'regular';
+                            if (message.status === 'success') {
+                                const lang = document.documentElement.lang;
+                                alert(lang === 'zh-TW' ? '浮水印已成功嵌入！' : 'Watermark embedded successfully!');
+                                // 文件夾會自動打開，因為後端已經處理
+                            } else if (message.status === 'error') {
+                                const lang = document.documentElement.lang;
+                                alert(lang === 'zh-TW' ? '嵌入浮水印失敗：' + message.message : 'Failed to embed watermark: ' + message.message);
+                            }
+                        } else if (message.type === 'embed_watermark') {
+                            // 重置圖像類型為常規
+                            lastImageType = 'regular';
+                            if (message.status === 'success') {
+                                const lang = document.documentElement.lang;
+                                alert(lang === 'zh-TW' ? '浮水印已成功嵌入！' : 'Watermark embedded successfully!');
+                                // 文件夾會自動打開，因為後端已經處理
+                            } else if (message.status === 'error') {
+                                const lang = document.documentElement.lang;
+                                alert(lang === 'zh-TW' ? '嵌入浮水印失敗：' + message.message : 'Failed to embed watermark: ' + message.message);
+                            }
+                        }
+                    } catch (e) {
+                        console.error('解析訊息失敗:', e);
+                    }
+                }
+            };
+            
+            ws.onclose = function() {
+                console.log('WebSocket 已斷開');
+                // 5秒後重新連接
+                setTimeout(connectWebSocket, 5000);
+            };
+            
+            ws.onerror = function(error) {
+                console.error('WebSocket 錯誤:', error);
+            };
+        }
+
+        // 初始連接
+        connectWebSocket();
+
+        // 在頁面關閉時斷開連接
+        window.onbeforeunload = function() {
+            if (ws) {
+                ws.close();
+            }
+        };
+
+        // 螢幕截圖功能
+        const btnScreenshot = document.getElementById('btn-screenshot');
+        const btnCompareImages = document.getElementById('btn-compare-images');
+        
+        btnScreenshot.addEventListener('click', () => {
+            if (!ws) return;
+            
+            // 將預覽畫面轉換為Base64圖像數據 (使用PNG格式，後端會轉為BMP)
+            const imageData = previewCanvas.toDataURL('image/png');
+            
+            // 發送截圖請求
+            ws.send(JSON.stringify({
+                type: 'screenshot',
+                data: imageData
+            }));
+            
+            // 顯示短暫的視覺反饋
+            const originalText = btnScreenshot.textContent;
+            btnScreenshot.disabled = true;
+            const lang = document.documentElement.lang;
+            btnScreenshot.textContent = lang === 'zh-TW' ? '處理中...' : 'Processing...';
+            
+            setTimeout(() => {
+                btnScreenshot.disabled = false;
+                btnScreenshot.textContent = originalText;
+            }, 1000);
+        });
+        
+        // 比較截圖功能
+        btnCompareImages.addEventListener('click', () => {
+            if (!ws) return;
+
+            // 先同步浮水印設定
+            const watermarkText = document.getElementById('watermark-text').value;
+            const watermarkVisibility = document.getElementById('watermark-visibility').value;
+            const watermarkRedundancy = document.getElementById('watermark-redundancy').value === 'true';
+            const frameInterval = document.getElementById('frame-interval').value;
+
+            ws.send(JSON.stringify({
+                type: 'config',
+                data: {
+                    watermarkText: watermarkText,
+                    watermarkVisible: watermarkVisibility === 'visible',
+                    watermarkRedundancy: watermarkRedundancy,
+                    frameInterval: parseInt(frameInterval)
+                }
+            }));
+
+            // 等待 config 設定完成後再送 compare_images
+            setTimeout(() => {
+                ws.send(JSON.stringify({
+                    type: 'compare_images'
+                }));
+            }, 100); // 100ms，確保後端先收到 config
+
+            // 視覺反饋
+            const originalText = btnCompareImages.textContent;
+            btnCompareImages.disabled = true;
+            const lang = document.documentElement.lang;
+            btnCompareImages.textContent = lang === 'zh-TW' ? '處理中...' : 'Processing...';
+
+            setTimeout(() => {
+                btnCompareImages.disabled = false;
+                btnCompareImages.textContent = originalText;
+            }, 1000);
+        });
+    </script>
+</body>
+</html> 
