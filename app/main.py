@@ -19,8 +19,8 @@ logging.basicConfig(
 app = FastAPI(title="LSB 浮水印嵌入器")
 
 # 靜態檔案和模板設定
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
-templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
+current_dir = Path(__file__).parent
+templates = Jinja2Templates(directory=current_dir / "templates")
 
 # 註冊路由
 app.include_router(stream.router, prefix="/api")
