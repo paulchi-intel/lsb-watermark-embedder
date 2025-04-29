@@ -38,12 +38,21 @@ git clone https://github.com/paulchi-intel/lsb-watermark-embedder.git
 cd lsb-watermark-embedder
 ```
 
-2. Install dependencies:
+2. Create and activate a virtual environment:
+```bash
+python -m venv venv
+# On Windows
+venv\Scripts\activate
+# On Linux/Mac
+# source venv/bin/activate
+```
+
+3. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Launch the application:
+4. Launch the application:
 ```bash
 python -m app.main
 ```
@@ -174,12 +183,21 @@ git clone https://github.com/paulchi-intel/lsb-watermark-embedder.git
 cd lsb-watermark-embedder
 ```
 
-2. 安裝所需依賴：
+2. 建立並啟動虛擬環境：
+```bash
+python -m venv venv
+# Windows 系統
+venv\Scripts\activate
+# Linux/Mac 系統
+# source venv/bin/activate
+```
+
+3. 安裝所需依賴：
 ```bash
 pip install -r requirements.txt
 ```
 
-3. 啟動應用程式：
+4. 啟動應用程式：
 ```bash
 python -m app.main
 ```
