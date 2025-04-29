@@ -34,8 +34,8 @@ A real-time screen watermark embedding tool developed in Python. It embeds water
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/paulchi-intel/watermark_embedder.git
-cd watermark_embedder
+git clone https://github.com/paulchi-intel/lsb-watermark-embedder.git
+cd lsb-watermark-embedder
 ```
 
 2. Install dependencies:
@@ -78,7 +78,7 @@ Visible watermarks use a semi-transparent text grid overlaid on the original ima
 ## Directory Structure
 
 ```
-watermark_embedder/
+lsb-watermark-embedder/
 ├── app/                       # Main application directory
 │   ├── api/                   # API implementation
 │   ├── core/                  # Core modules
@@ -170,8 +170,8 @@ For any questions or suggestions, please open an issue or contact paul.chi@intel
 
 1. 克隆此專案到本地：
 ```bash
-git clone https://github.com/paulchi-intel/watermark_embedder.git
-cd watermark_embedder
+git clone https://github.com/paulchi-intel/lsb-watermark-embedder.git
+cd lsb-watermark-embedder
 ```
 
 2. 安裝所需依賴：
@@ -214,7 +214,7 @@ LSB（最低有效位元）是一種隱寫術技術，通過修改影像中像�
 ## 目錄結構
 
 ```
-watermark_embedder/
+lsb-watermark-embedder/
 ├── app/                       # 主要應用程式目錄
 │   ├── api/                   # API 實現
 │   ├── core/                  # 核心功能模組
